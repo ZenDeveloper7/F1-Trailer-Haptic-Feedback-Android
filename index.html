@@ -2,14 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>F1 Trailer Haptic</title>
+  <title>Haptic YouTube Trailer</title>
   <style>
     body {
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
       background: black;
+      color: white;
+    }
+    #player {
+      display: none; /* Hidden until play is pressed */
+      margin-top: 20px;
     }
     button {
       padding: 20px 40px;
@@ -27,25 +33,68 @@
 </head>
 <body>
   <button id="playBtn">▶ Play Trailer</button>
+  <div id="player"></div>
 
   <script>
-    const playBtn = document.getElementById("playBtn");
+    let player;
+    let vibrationIntervals = [];
 
-    playBtn.addEventListener("click", () => {
-      // Open YouTube trailer in a new tab
-      window.open("https://www.youtube.com/watch?v=8yh9BPUBbbQ", "_blank");
+    // Load YouTube IFrame API
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
 
-      // Vibrations pattern (fallback handled automatically by browser)
-      const pattern = [
-        180, 120, 40, 90, 40, 90, 300, 60, 60, 60, 60,
-        300, 45, 45, 45, 45, 45, 45, 350, 70, 70, 70, 70, 500
-      ];
+    // Create player when API ready
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player("player", {
+        height: "360",
+        width: "640",
+        videoId: "8yh9BPUBbbQ", // F1 trailer
+        events: {
+          "onStateChange": onPlayerStateChange
+        }
+      });
+    }
 
-      if ("vibrate" in navigator) {
-        navigator.vibrate(pattern);
-      } else {
-        alert("Vibration API not supported on this device.");
+    // Define haptic pattern timeline (ms offsets relative to video start)
+    const vibrationTimeline = [
+      { time: 0, pattern: [180,120,40,90] },
+      { time: 4000, pattern: [90,300,60,60,60,60] },
+      { time: 8000, pattern: [300,45,45,45,45,45,45] },
+      { time: 12000, pattern: [350,70,70,70,70,500] }
+    ];
+
+    function startVibrations() {
+      vibrationTimeline.forEach(item => {
+        const timer = setTimeout(() => {
+          if ("vibrate" in navigator) {
+            navigator.vibrate(item.pattern);
+          }
+        }, item.time);
+        vibrationIntervals.push(timer);
+      });
+    }
+
+    function stopVibrations() {
+      vibrationIntervals.forEach(clearTimeout);
+      vibrationIntervals = [];
+      navigator.vibrate(0); // Stop ongoing vibrations
+    }
+
+    // Trigger vibration when video starts/stops
+    function onPlayerStateChange(event) {
+      if (event.data === YT.PlayerState.PLAYING) {
+        startVibrations();
+      } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        stopVibrations();
       }
+    }
+
+    // Play button handler
+    document.getElementById("playBtn").addEventListener("click", () => {
+      document.getElementById("playBtn").style.display = "none";
+      document.getElementById("player").style.display = "block";
+      player.playVideo();
     });
   </script>
 </body>

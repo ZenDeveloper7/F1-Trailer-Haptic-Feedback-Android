@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Haptic Timeline Generator</title>
+  <title>Haptic Timeline Generator (YouTube)</title>
   <style>
     body {
       background: #121212;
@@ -14,8 +14,10 @@
       justify-content: center;
       padding: 20px;
     }
-    video {
-      max-width: 90%;
+    #player {
+      width: 80%;
+      max-width: 720px;
+      aspect-ratio: 16/9;
       border: 3px solid #ff0000;
       border-radius: 12px;
     }
@@ -49,12 +51,10 @@
   </style>
 </head>
 <body>
-  <h2>🎬 F1 Haptic Timeline Generator</h2>
+  <h2>🎬 F1 Haptic Timeline Generator (YouTube)</h2>
 
-  <video id="trailer" controls>
-    <source src="f1-trailer.mp4" type="video/mp4">
-    Your browser does not support HTML5 video.
-  </video>
+  <!-- YouTube Player Container -->
+  <div id="player"></div>
 
   <div class="controls">
     <button id="startBtn">Start Recording</button>
@@ -65,32 +65,46 @@
   <pre id="output">// Haptic timeline will appear here...</pre>
 
   <script>
-    const video = document.getElementById("trailer");
+    let player;
+    let timeline = [];
+    let recording = false;
+
     const startBtn = document.getElementById("startBtn");
     const cueBtn = document.getElementById("cueBtn");
     const resetBtn = document.getElementById("resetBtn");
     const output = document.getElementById("output");
 
-    let timeline = [];
-    let recording = false;
-
     function renderTimeline() {
       output.textContent = JSON.stringify(timeline, null, 2);
     }
 
+    // Load YouTube IFrame API
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+
+    // Initialize YouTube Player
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player("player", {
+        videoId: "8yh9BPUBbbQ", // F1 trailer ID
+        playerVars: { 'controls': 1, 'rel': 0 },
+        events: {}
+      });
+    }
+    window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
     startBtn.addEventListener("click", () => {
-      video.play();
       timeline = [];
+      renderTimeline();
       recording = true;
+      player.playVideo();
       cueBtn.disabled = false;
       startBtn.disabled = true;
-      renderTimeline();
     });
 
     cueBtn.addEventListener("click", () => {
-      if (recording) {
-        const timestamp = parseFloat(video.currentTime.toFixed(2));
-        // Default pattern (can be edited later)
+      if (recording && player && player.getCurrentTime) {
+        const timestamp = parseFloat(player.getCurrentTime().toFixed(2));
         const cue = { time: timestamp, pattern: [100, 50, 100] };
         timeline.push(cue);
         navigator.vibrate(cue.pattern); // preview the vibration
@@ -100,19 +114,13 @@
 
     resetBtn.addEventListener("click", () => {
       timeline = [];
-      recording = false;
-      video.pause();
-      video.currentTime = 0;
-      cueBtn.disabled = true;
-      startBtn.disabled = false;
       renderTimeline();
-    });
-
-    // Stop recording when video ends
-    video.addEventListener("ended", () => {
       recording = false;
       cueBtn.disabled = true;
       startBtn.disabled = false;
+      if (player) {
+        player.stopVideo();
+      }
     });
   </script>
 </body>

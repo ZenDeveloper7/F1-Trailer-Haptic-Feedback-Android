@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Haptic Timeline Generator</title>
+  <style>
+    body {
+      background: #121212;
+      color: #eee;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    video {
+      max-width: 90%;
+      border: 3px solid #ff0000;
+      border-radius: 12px;
+    }
+    .controls {
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    pre {
+      margin-top: 20px;
+      background: #1e1e1e;
+      padding: 12px;
+      border-radius: 8px;
+      max-width: 90%;
+      overflow-x: auto;
+      color: #00ff88;
+    }
+  </style>
+</head>
+<body>
+  <h2>🎬 F1 Haptic Timeline Generator</h2>
+
+  <video id="trailer" controls>
+    <source src="f1-trailer.mp4" type="video/mp4">
+    Your browser does not support HTML5 video.
+  </video>
+
+  <div class="controls">
+    <button id="startBtn">Start Recording</button>
+    <button id="cueBtn" disabled>Add Haptic Cue</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <pre id="output">// Haptic timeline will appear here...</pre>
+
+  <script>
+    const video = document.getElementById("trailer");
+    const startBtn = document.getElementById("startBtn");
+    const cueBtn = document.getElementById("cueBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const output = document.getElementById("output");
+
+    let timeline = [];
+    let recording = false;
+
+    function renderTimeline() {
+      output.textContent = JSON.stringify(timeline, null, 2);
+    }
+
+    startBtn.addEventListener("click", () => {
+      video.play();
+      timeline = [];
+      recording = true;
+      cueBtn.disabled = false;
+      startBtn.disabled = true;
+      renderTimeline();
+    });
+
+    cueBtn.addEventListener("click", () => {
+      if (recording) {
+        const timestamp = parseFloat(video.currentTime.toFixed(2));
+        // Default pattern (can be edited later)
+        const cue = { time: timestamp, pattern: [100, 50, 100] };
+        timeline.push(cue);
+        navigator.vibrate(cue.pattern); // preview the vibration
+        renderTimeline();
+      }
+    });
+
+    resetBtn.addEventListener("click", () => {
+      timeline = [];
+      recording = false;
+      video.pause();
+      video.currentTime = 0;
+      cueBtn.disabled = true;
+      startBtn.disabled = false;
+      renderTimeline();
+    });
+
+    // Stop recording when video ends
+    video.addEventListener("ended", () => {
+      recording = false;
+      cueBtn.disabled = true;
+      startBtn.disabled = false;
+    });
+  </script>
+</body>
+</html>
